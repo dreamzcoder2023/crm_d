@@ -1,0 +1,5 @@
+@include('layout.duralux.header')
+@include('layout.duralux.topbar')
+@include('layout.duralux.sidebar')
+@yield('content')
+@include('layout.duralux.footer')
