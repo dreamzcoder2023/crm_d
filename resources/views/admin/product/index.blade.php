@@ -183,8 +183,8 @@
                             searchable: false
                         }, // Row index
                         {
-                            data: 'name',
-                            name: 'name'
+                            data: 'project_name',
+                            name: 'project_name'
                         },
                         {
                             data: 'customer_name',

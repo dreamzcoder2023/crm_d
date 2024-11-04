@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Facades\DB as FacadesDB;
 use Yajra\DataTables\DataTables as DataTablesDataTables;
 
 class ProductController extends Controller
@@ -23,21 +24,39 @@ class ProductController extends Controller
                 ->leftjoin('equipment', 'equipment.id', '=', 'product.equipment_id')
                 ->leftjoin('equipment_type', 'equipment_type.id', '=', 'product.equipment_type_id')
                 ->leftjoin('equipment_model', 'equipment_model.id', '=', 'product.equipment_model_id')
-                ->select('product.*', 'users.name as customer_name', 'equipment.name as equipment', 'equipment_type.name as type', 'equipment_model.name as model', 'project.name as name')->orderby('id', 'desc');
+                ->select(
+                    'product.id',
+                   
+                    'product.kw',
+                    'product.total_kw',
+                    FacadesDB::raw('ROUND(product.amperage, 2) as amperage'),  // Rounded amperage
+                    'product.rec_breaker_size',
+                    'users.name as customer_name',
+                    'equipment.name as equipment',
+                    'equipment_type.name as type',
+                    'equipment_model.name as model',
+                    'project.name as project_name'
+                )->orderby('id', 'desc');
 
-            return DataTablesDataTables::of($data)
-
+                return DataTablesDataTables::of($data)
+                ->filterColumn('project_name', function($query, $keyword) {
+                    $query->where('project.name', 'LIKE', "%{$keyword}%");
+                })
+                ->filterColumn('customer_name', function($query, $keyword) {
+                    $query->where('users.name', 'LIKE', "%{$keyword}%");
+                })
+                ->filterColumn('equipment', function($query, $keyword) {
+                    $query->where('equipment.name', 'LIKE', "%{$keyword}%");
+                })
+                ->filterColumn('type', function($query, $keyword) {
+                    $query->where('equipment_type.name', 'LIKE', "%{$keyword}%");
+                })
+                ->filterColumn('model', function($query, $keyword) {
+                    $query->where('equipment_model.name', 'LIKE', "%{$keyword}%");
+                })
                 ->addIndexColumn()
-                //     ->addColumn('action', function($row){
-                //         $btn = '<a href="javascript:void(0)" class="edit_model" data-id="' . $row->id . '"><i class="feather feather-edit-3 me-3"></i></a>
-                //         <a href="javascript:void(0)" class="delete_model" data-id="' . $row->id . '"><i class="feather feather-trash-2 me-3"></i></a>';
-                // return $btn;
-                //     })
-
-                // ->rawColumns(['action'])
-
                 ->make(true);
-            //  dd($data->get());
+    
         }
 
 
@@ -99,7 +118,7 @@ class ProductController extends Controller
         $type_name = $type_arr[$type_name_low] ?? null;
         // dd($type_name);
         $total_kw = $model->power_kw * $type_name;
-        $amperage = ($total_kw * 1000) / (380 * 0.94 * 1.73) * 2;
+        $amperage = Round((($total_kw * 1000) / (380 * 0.94 * 1.73) * 2),2);
         $breaker_size = $this->getNextBreakerSize($amperage, $breaker_arr);
         // dd($breaker_size);
         $response = [
